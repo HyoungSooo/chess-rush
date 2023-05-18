@@ -3,7 +3,4 @@
 .pot
 .pyc
 __pycache__
-
-mysql
-
 staticfiles
