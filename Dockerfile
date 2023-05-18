@@ -30,6 +30,6 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Entrypoint dependencies
 RUN apt-get install netcat -y
-
+RUN chmod 777 /usr/src/app
 # run entrypoint.sh
 ENTRYPOINT ["bash", "/usr/local/bin/docker-entrypoint.sh"]
