@@ -15,11 +15,11 @@ RUN apt-get install gcc default-libmysqlclient-dev -y
 # install dependencies
 RUN pip install -U pip setuptools wheel
 RUN pip install --upgrade pip
-COPY requirements.txt .
+COPY chessRush/requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 
 # copy project
-COPY . .
+COPY /chessRush .
 
 # Convert plain text files from Windows or Mac format to Unix
 RUN apt-get install dos2unix
