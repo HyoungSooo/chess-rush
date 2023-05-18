@@ -1,0 +1,38 @@
+name: Deploy to cloudtype
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Connect deploy key
+        uses: cloudtype-github-actions/connect@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          ghtoken: ${{ secrets.GHP_TOKEN }}
+      - name: Deploy
+        uses: cloudtype-github-actions/deploy@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          project: aaa5740323/chessrush
+          stage: main
+          yaml: >
+            name: chessrush
+
+            app: dockerfile
+
+            options:
+              ports: "8000"
+              dockerfile: chessRush/Dockerfile
+              commands: python manage.py runserver 0.0.0.0:8000
+              env:
+                - name: SECRET_KEY
+                  value: django-insecure-nekkd7f8#7!-j6!q%4nlr)xp+m!!w%q(92_=jtniq%m*4*2^xc
+            context:
+              git:
+                url: git@github.com:${{ github.repository }}.git
+                ref: ${{ github.ref }}
