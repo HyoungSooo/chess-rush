@@ -12,21 +12,52 @@
 }
 </style>
 
-<div class= 'flex justify-evenly'>
+<div class= 'flex justify-evenly items-center'>
   <div class = "flex flex-col">
-    <div id="myBoard" style='width:500px;'></div>
-    <button id='advance' class="group relative h-6 w-20 overflow-hidden rounded-lg bg-white text-lg shadow">
-      <div class="absolute inset-0 w-3 bg-amber-400 transition-all duration-[250ms] ease-out group-hover:w-full"></div>
-      <span class="relative text-black group-hover:text-white text-sm text-center">Advance</span>
-    </button>
-    <button id='destroy' class="group relative h-6 w-20 overflow-hidden rounded-lg bg-white text-lg shadow">
-      <div class="absolute inset-0 w-3 bg-amber-400 transition-all duration-[250ms] ease-out group-hover:w-full"></div>
-      <span class="relative text-black group-hover:text-white text-sm text-center">Distroy</span>
-    </button>
+    <div>
+      <div id="myBoard" style='width:500px;position: relative;'></div>
+      <div id='circle' class='flex pt-2'></div>
+    </div>
+    <div class="login-page center-button">
+      <div class="form">
+        <div class="login-form">
+          <input type="text" placeholder="username" id='username'/>
+          <select id='region'>
+            <option value="USA">USA</option>
+            <option value="CAN">CAN</option>
+            <option value="UK">UK</option>
+            <option value="JPN">JPN</option>
+            <option value="CHN">CHN</option>
+            <option value="KOR">KOR</option>
+            <option value="GER">GER</option>
+            <option value="FRA">FRA</option>
+            <option value="ITA">ITA</option>
+            <option value="BRA">BRA</option>
+            <option value="MEX">MEX</option>
+            <option value="ARG">ARG</option>
+            <option value="Ohter">Ohter</option>
+          </select>
+          <button id='start-button'>Start</button>
+          <p class="message">Rank registration is possible only 5 times a day</p>  
+        </div>
+      </div>
+    </div>
+    
   </div>
-  <div id='circle' class='flex flex-wrap w-80'></div>
-  <div class='flex flex-col hidden' id='subcontainer'>
-    <div id="subBoard" style='width:500px;'></div>
+  <div class ='overflow-scroll' style = 'width:700px;height: 500px;'>
+    <table class="content-table " style='width : 100%; height: 100%;'>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Score</th>
+          <th>Region</th>
+        </tr>
+      </thead>
+      <tbody class = 'content-table-body'>
+        
+      </tbody>
+    </table>
   </div>
 </div>
 <div id="menu" class="w-full h-full bg-gray-900 bg-opacity-80 top-0 fixed sticky-0 hidden">
@@ -65,6 +96,7 @@
   var currentMovesCnt = 0;
   var currentWrong = 0;
   var correct = 0;
+  let username = [];
 
   let menu = document.getElementById("menu");
   const showMenu = (flag) => {
@@ -73,7 +105,7 @@
 
   function addCirclesGreen() {
     const circle = `<button class="max-w-xs rounded-full flex items-center text-sm focus:outline-none relative">
-      <span class='h-6 w-6 rounded-full bg-emerald-500 ring ring-white'></span>
+      <span class='h-3 w-3 rounded-full bg-emerald-500 ring ring-white'></span>
     </button>`
 
     $('#circle').append(circle)
@@ -81,7 +113,7 @@
 
   function addCirclesRed() {
     const circle = `<button class="max-w-xs rounded-full flex items-center text-sm focus:outline-none relative">
-      <span class='h-6 w-6 rounded-full bg-red-500 ring ring-white'></span>
+      <span class='h-3 w-3 rounded-full bg-red-500 ring ring-white'></span>
     </button>`
 
     $('#circle').append(circle)
@@ -98,7 +130,35 @@
       return row + column
     })
   }
+  function appendTableRow(rank, name, score, region) {
+    // Find the table element with the class 'content-table'
+    const table = document.querySelector('.content-table-body');
 
+    // Create a new table row
+    const newRow = document.createElement('tr');
+
+    // Create table data cells and set their content
+    const rankCell = document.createElement('td');
+    rankCell.textContent = rank;
+
+    const nameCell = document.createElement('td');
+    nameCell.textContent = name;
+
+    const scoreCell = document.createElement('td');
+    scoreCell.textContent = score;
+
+    const regionCell = document.createElement('td');
+    regionCell.textContent = region;
+
+    // Append the table data cells to the new row
+    newRow.appendChild(rankCell);
+    newRow.appendChild(nameCell);
+    newRow.appendChild(scoreCell);
+    newRow.appendChild(regionCell);
+
+    // Append the new row to the table
+    table.appendChild(newRow);
+  }
   
 
   function removeHighlights () {
@@ -114,13 +174,64 @@
     $board.find('.square-' + position).addClass('highlight-check')
   }
 
+  function getRank(){
+    $.ajax({
+      type: "GET", 
+      url: "/api/rank",
+      dataType: "json",
+      async:false,
+      error: function () {
+        console.log("통신실패!!");
+      },
+      success: function (data) {
+        console.log(data)
+        $('.content-table-body').empty()
+        for (let i=0; i < data.length; i++){
+          appendTableRow(i+1, data[i].username, data[i].score, data[i].region);
+        }
+      },
+    });
+  }
 
   $(document).ready(function(){
-    getPuzzle();
+    getRank()
   })
+  function getUsername(value){
+    var result = "";
+    $.ajax({
+      type: "GET", 
+      url: `/api/username?username=${value}`,
+      dataType: "json",
+      async:false,
+      error: function () {
+        console.log("통신실패!!");
+      },
+      success: function (data) {
+        result = data
+      },
+    }); 
+    return result;
+  }
+
+
+  $('#start-button').click(function(){
+    if (!$('#username').val() && !$('password').val()){
+      return false
+      }
+    
+    if (!getUsername($('#username').val())){
+      return false
+    }
+    
+    $(".form").css("display", "none");
+    $('#circle').empty()
+    currentWrong = 0
+    correct = 0 
+    updateStatus()
+    getPuzzle();
+    })
 
   function nextMove(){
-    console.log(12)
     if (moves.length === currentMovesCnt){
       addCirclesGreen()
       correct += 1
@@ -179,6 +290,23 @@
     }
   }
 
+  function postRank(){
+    $.ajax({
+      type: "POST", 
+      url: `/api/rank`,
+      data:JSON.stringify({username : $('#username').val(), region: $('#region option:selected').val(), score:correct}),
+      dataType: "json",
+      contentType: "application/json",
+      async:false,
+      error: function () {
+        console.log("통신실패!!");
+      },
+      success: function (data) {
+        console.log(data)
+      },
+    }); 
+  }
+
   function onDrop(source, target) {
     removeGreySquares();
 
@@ -208,10 +336,10 @@
     if (source+target !== next){
       addCirclesRed()
       if (currentWrong >= 2){
-        board.clear(false)
-        $('#main').html(`Correct : ${correct}`)
-        showMenu(true)
-
+        $(".form").css("display", "block");
+        board.start()
+        postRank()
+        getRank()
         return 'snapback';
       } else {
         currentWrong += 1
@@ -318,20 +446,6 @@
     onSnapEnd: onSnapEnd,
   };
   board = Chessboard("myBoard", config);
-
-  
-  
-
-
-
-  $("#retry").on("click", function () {
-    updateStatus()
-    getPuzzle()
-    currentWrong = 0;
-    correct = 0;
-    showMenu()
-    $('#circle').empty()
-  });
 
   function subremoveGreySquares () {
     $('#subBoard .square-55d63').css('background', '')

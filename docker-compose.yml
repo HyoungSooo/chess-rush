@@ -4,7 +4,7 @@ services:
   web:
     container_name: chessRush
     build:
-      context: ./chessRush
+      context: .
       dockerfile: Dockerfile
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
@@ -13,3 +13,11 @@ services:
       - ./.env.dev
     ports:
       - 8000:8000
+    depends_on:
+      - redis
+
+  redis:
+    image: redis
+    container_name: redis-service-chess-rush
+    ports:
+      - "6379:6379"
