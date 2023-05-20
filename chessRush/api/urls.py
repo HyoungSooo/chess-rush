@@ -67,36 +67,11 @@ def get_client_ip(request, data:UserInterface):
     
     cache.set('total', total, ONE_DAY*365)
 
-    username = cache.get('username')
-
-    if username == None:
-        username = set()
-    
-    username.add(data.username)
-
-    cache.set('username', username, ONE_DAY)
-
-    ip_cache = cache.get('ip_address')
-    if ip_cache == None:
-        ip_cache = {ip: 1}
-    else:
-        try:
-            ip_cache[ip] += 1
-        except:
-            ip_cache[ip] = 1
-
-    cache.set('ip_address', ip_cache, ONE_DAY)
-    
-    if ip_cache[ip] > 5:
-        return JsonResponse({'msg' : 'allow only 5 times plz try next day'})
-    
-    cache.set(ip, ip_cache, ONE_DAY)
-
     rank = cache.get('rank')
     if rank == None:
-        rank = [{'username' : data.username, 'region': data.region, 'score': data.score}]
+        rank = {ip : {'username' : data.username, 'region': data.region, 'score': data.score}}
     else:
-        rank.append({'username' : data.username, 'region': data.region, 'score': data.score})
+        rank[ip] = {'username' : data.username, 'region': data.region, 'score': data.score}
     
     cache.set('rank', rank, 60*60*24)
     
@@ -105,22 +80,9 @@ def get_client_ip(request, data:UserInterface):
 @api.get('/rank')
 def get_rank(request):
     try:
-      return sorted(cache.get('rank'), key=lambda x: x['score'], reverse=True)
+      return sorted(cache.get('rank').values(), key=lambda x: x['score'], reverse=True)
     except:
       return []
-
-@api.get('/username')
-def get_username(request, username:str):
-    user = cache.get('username')
-
-    if user == None:
-        return True
-    
-    if username in user:
-        return False
-    else:
-        return True
-
 
 
 @api.post('/cache')

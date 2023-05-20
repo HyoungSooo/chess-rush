@@ -38,7 +38,6 @@
             <option value="Ohter">Ohter</option>
           </select>
           <button id='start-button'>Start</button>
-          <p class="message">Rank registration is possible only 5 times a day</p>  
         </div>
       </div>
     </div>
@@ -220,11 +219,6 @@
     if (!$('#username').val() && !$('password').val()){
       return false
       }
-    
-    if (!getUsername($('#username').val())){
-      return false
-    }
-    
     $(".form").css("display", "none");
     $('#circle').empty()
     currentWrong = 0
