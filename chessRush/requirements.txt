@@ -14,3 +14,4 @@ whitenoise
 chess
 pandas
 django-redis
+stockfish

@@ -1,0 +1,297 @@
+{% extends 'base.html' %} 
+{% load static %} 
+
+{% block head %}
+  <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+{% endblock head %}
+{% block content %}
+<style>
+  .spare-pieces-top-4028b {
+    display:none
+  }
+  .spare-pieces-bottom-ae20f{
+    display:flex
+  }
+</style>
+
+<py-config>
+  packages = ['chess']
+</py-config>
+
+<py-script>
+  import chess
+
+  def get_board():
+    board = chess.Board()
+    return board
+  
+</py-script>
+
+<div class= 'flex justify-evenly items-center'>
+  <div class = "flex flex-col">
+    <div>
+        <div id="myBoard" style="width: 500px; margin: 0;"></div>
+        <div id="gameBoard" style="width: 500px; margin: 0; display: none;"></div>
+        <div id='options' style ='display: flex; flex-direction: column;justify-content: center;'></div>
+        <p id = 'Cscore'></p>
+        <button id='start'>Start</button>
+    </div>
+    <div class="login-page center-button">
+      <div class="form">
+        <div class="login-form">
+          <input type="text" placeholder="username" id='username'/>
+          <select id='region'>
+            <option value="USA">USA</option>
+            <option value="CAN">CAN</option>
+            <option value="UK">UK</option>
+            <option value="JPN">JPN</option>
+            <option value="CHN">CHN</option>
+            <option value="KOR">KOR</option>
+            <option value="GER">GER</option>
+            <option value="FRA">FRA</option>
+            <option value="ITA">ITA</option>
+            <option value="BRA">BRA</option>
+            <option value="MEX">MEX</option>
+            <option value="ARG">ARG</option>
+            <option value="Ohter">Ohter</option>
+          </select>
+          <button id='start-button'>Start</button>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  <div class ='overflow-scroll' style = 'width:700px;height: 500px;'>
+    <table class="content-table " style='width : 100%; height: 100%;'>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Score</th>
+          <th>Region</th>
+        </tr>
+      </thead>
+      <tbody class = 'content-table-body'>
+        
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+<script>
+  let blackScore = 45
+  let whitePieces = 45
+  let copyWP = 0
+  let piecesScore = 0;
+  var setBoard = null;
+  let positionSet = [];
+  let king = false;
+
+  const pieces = {
+    wK:0,
+    wN:3,
+    wB:3,
+    wR:5,
+    wQ:8,
+    wP:1
+  }
+
+  function checkScoreVaildation(piece){
+    if (positionSet.length >= 17){
+      return false
+    } else {
+      copyWP = copyWP + pieces[piece]
+      if (copyWP > whitePieces){
+        return false
+      }
+      return true
+    }
+  }
+  function decreaseScore(piece){
+    copyWP = copyWP - pieces[piece]
+  }
+
+  function getFen(){
+    $.ajax({
+      type: "GET",
+      url:
+        "/api/fen",
+      dataType: "json",
+      async:false,
+      error: function () {
+        console.log("통신실패!!");
+      },
+      success: function (data) {
+        setBoard.position(data.fen + '8/8/8/8');
+      },
+    });
+  }
+
+  function startGame(){
+      game = pyscript.interpreter.globals.get('get_board')()
+      if (!checkVaildations(game)){
+        return
+      }
+      game.set_fen(setBoard.fen())
+      gameBoard = new Chessboard('gameBoard', {
+        draggable: false,
+        sparePieces: false,
+        position:game.fen()})
+      $('#gameBoard').css('display', 'block')
+      $('#myBoard').css('display', 'none')
+      battleStockfish(game,gameBoard)
+  }
+
+
+  $( document ).ready(
+     updateScore(piecesScore),  
+  )
+  function updateScore(CPScore){
+    $('#Cscore').html(copyWP)
+  }
+
+  function battleStockfish(game,board) {
+    $.ajax({
+      type: "GET",
+      url:
+        "/api/stockfish?fen=" + game.fen(),
+      dataType: "json",
+      error: function () {
+        console.log("통신실패!!");
+      },
+      success: function (data) {
+        game.push_uci(data)
+        board.position(game.fen());
+        checkStatus(game,board)
+      },
+    });
+  }
+
+
+  function checkStatus(game,board){
+    if (game.is_checkmate() === true && game.turn === false){
+
+    return
+    } else if (game.is_game_over() || game.is_repetition(count = 3)){
+    window.setTimeout(init, 1000)
+    } else {
+    battleStockfish(game,board)
+    }
+  }
+  
+  function onDragStart (source, piece, position, orientation) {
+    if ((orientation === 'white' && piece.search(/^w/) === -1) ||
+        (orientation === 'black' && piece.search(/^b/) === -1)) {
+      return false
+    }
+  }
+  function onDrop (source, target, piece, newPos, oldPos, orientation) {
+    if (target.slice(1,2) > 4 || positionSet.includes(target)) {
+      return 'snapback'
+    }
+
+    if (target === 'offboard' && source !== 'spare'){
+      positionSet = positionSet.filter((e) => e !== source)
+      decreaseScore(piece)
+      updateScore(copyWP)
+      return
+    }
+
+    if (target !== 'offboard' && source !== 'spare'){
+      positionSet = positionSet.filter((e) => e !== source)
+      positionSet.push(target)
+      return
+    }
+    
+    if (source === 'spare' && target !=='offboard') {
+      vaildation = checkScoreVaildation(piece)
+      if (!vaildation) {
+        decreaseScore(piece)
+        return 'snapback'
+      }
+    }
+    
+    if (target !== 'offboard'){
+      positionSet.push(target)
+    }
+    
+    updateScore(copyWP)
+  }
+
+  function setBlackBoard(status=false, fen){
+    var resultFen = '';
+    if (status){
+      defaultPiecesSet()
+    } 
+    prepareBoard = pyscript.interpreter.globals.get('get_board')()
+    randomFen = pyscript.interpreter.globals.get('create_random_fen')(score = blackScore , count = config.think).toJs();
+    let RF = randomFen.map(function (element) {
+      return element + fen
+    })
+    let stringFen = RF.join(',').replaceAll('/','_')
+    $.ajax({
+      type: "GET",
+      url: `/chessapi/api/automate/eval?fen_list=${stringFen}`,
+      async: false,
+      dataType: "json",
+      error: function () {
+        
+      },
+      success: function (data) {
+        console.log(data)
+        resultFen = data
+      }
+
+    })
+
+    updateScore(copyWP)
+    setBoard.position(resultFen);
+    copyWP = [...whitePieces]
+    prepareBoard.set_fen(resultFen)
+    return prepareBoard
+  }
+
+  
+
+  function init(){
+    $('#gameBoard').css('display', 'none')
+    $('#myBoard').css('display', 'block')
+    positionSet = [];
+    copyWP = 0
+    getFen()
+  }
+
+  function checkVaildations(game){
+    game.turn = false
+
+    if (game.is_check() || game.is_checkmate() || game.is_stalemate() || !game.king(true)){
+      return false
+    }
+
+    game.turn = true
+
+    return game
+  }
+
+  $('#start-button').click(function(){
+    if (!$('#username').val() && !$('password').val()){
+      return false
+      }
+    $(".form").css("display", "none");
+    })
+  
+
+  setBoard = new Chessboard('myBoard', {
+    onDragStart: onDragStart,
+    draggable: true,
+    dropOffBoard: 'trash',
+    onDrop: onDrop,
+    sparePieces: true,
+  })
+
+</script>
+
+{% endblock content %} 

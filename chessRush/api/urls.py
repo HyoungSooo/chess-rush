@@ -5,9 +5,9 @@ from django.core.cache import cache
 import random
 from django.db.models import *
 from django.conf import settings
-from .models import ChessPuzzle
+from .models import ChessPuzzle, AutomateFen
 from django.urls import path,include
-from .utils import write_pgn_chunk_files
+from .utils import write_pgn_chunk_files, get_stockfish, create_random_fen
 from .processor import PuzzleProcess
 from django.views.generic import TemplateView
 from collections import defaultdict
@@ -39,7 +39,7 @@ def get_random_puzzle(request):
     while True:
         pk = random.randint(1, max_id)
         puzzle = ChessPuzzle.objects.filter(
-            pk=pk).values('fen', 'moves').first()
+            pk=pk).filter(theme__icontains = 'underPromotion').values('fen', 'moves').first()
         if puzzle:
             return JsonResponse(puzzle, safe=False)
 
@@ -103,9 +103,34 @@ def clear_all_cache(request, key:ApiKey):
 def get_total_palyed_game(request):
     return cache.get('total')
 
+@api.get('/stockfish')
+def stockfish_recommend(request, fen: str):
+    stockfish = get_stockfish()
+    stockfish.set_fen_position(fen)
+    return stockfish.get_best_move()
+      
+
+@api.get('fen')
+def get_random_fen(request):
+    max_id = AutomateFen.objects.all().aggregate(max_id=Max("id"))['max_id']
+    if max_id == None:
+        fen_list = create_random_fen(100)
+        create_list = []
+        for i in fen_list:
+            create_list.append(AutomateFen(fen = i))
+        
+        AutomateFen.objects.bulk_create(create_list)
+            
+    while True:
+        pk = random.randint(1, max_id)
+        fen = AutomateFen.objects.filter(
+            pk=pk).values('fen').first()
+        if fen:
+            return JsonResponse(fen, safe=False)
 
     
 urlpatterns = [
     path('', api.urls),
     path('sample/', TemplateView.as_view(template_name='puzzle_attack.html'), name='puzzle'),
+    path('sample/automate', TemplateView.as_view(template_name='automate.html'), name='puzzle'),
 ]
