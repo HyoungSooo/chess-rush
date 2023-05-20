@@ -1,7 +1,6 @@
 from ninja import NinjaAPI, File, Schema
 from ninja.files import UploadedFile
 from django.http import JsonResponse, HttpResponse
-from django.core import serializers
 from django.core.cache import cache
 import random
 from django.db.models import *
@@ -58,6 +57,15 @@ def get_client_ip(request, data:UserInterface):
         ip = x_forwarded_for.split(',')[0]
     else:
         ip = request.META.get('REMOTE_ADDR')
+    
+    total = cache.get('total')
+
+    if total == None:
+       total = 1
+    else:
+        total += 1
+    
+    cache.set('total', total, ONE_DAY*365)
 
     username = cache.get('username')
 
@@ -97,7 +105,7 @@ def get_client_ip(request, data:UserInterface):
 @api.get('/rank')
 def get_rank(request):
     try:
-      return sorted(cache.get('rank'), key=lambda x: x['score'])
+      return sorted(cache.get('rank'), key=lambda x: x['score'], reverse=True)
     except:
       return []
 
@@ -127,7 +135,11 @@ def clear_all_cache(request, key:ApiKey):
         total_played = 0
 
     cache.clear()
-    cache.set('total',total_played, ONE_DAY)
+    cache.set('total',total_played, ONE_DAY*365)
+
+@api.get('total')
+def get_total_palyed_game(request):
+    return cache.get('total')
 
 
     
