@@ -34,10 +34,15 @@ def create_random_fen(total):
             count += 1
             fen = ['q']*q + ['r']*r + ['n']*n + ['b']*b + ['p']*p + ['k'] + [0] * (32 - (q+r+n+b+p + 1))
 
-            random.shuffle(fen)
+            while True:
 
-            new_lst = [fen[i:i+8] for i in range(0,len(fen),8)]
-            
+              random.shuffle(fen)
+
+              new_lst = [fen[i:i+8] for i in range(0,len(fen),8)]
+
+              if 'k' in new_lst[0] or 'k' in new_lst[1]:
+                  break
+                  
             result = ''
             for row in new_lst:
                 cnt = 0

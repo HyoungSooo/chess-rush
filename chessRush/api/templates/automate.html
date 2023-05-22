@@ -35,7 +35,7 @@
         <div id="gameBoard" style="width: 500px; margin: 0; display: none;"></div>
         <div id='options' style ='display: flex; flex-direction: column;justify-content: center;'></div>
         <p id = 'Cscore'></p>
-        <button id='start'>Start</button>
+        <button id='start' class = 'start-button'>Start</button>
     </div>
     <div class="login-page center-button">
       <div class="form">
@@ -67,9 +67,8 @@
       <thead>
         <tr>
           <th>Rank</th>
-          <th>Name</th>
-          <th>Score</th>
-          <th>Region</th>
+          <th>fen</th>
+          <th>win</th>
         </tr>
       </thead>
       <tbody class = 'content-table-body'>
@@ -89,6 +88,7 @@
   var setBoard = null;
   let positionSet = [];
   let king = false;
+  let checkPoint = '';
 
   const pieces = {
     wK:0,
@@ -100,6 +100,7 @@
   }
 
   function checkScoreVaildation(piece){
+
     if (positionSet.length >= 17){
       return false
     } else {
@@ -129,26 +130,81 @@
       },
     });
   }
+  function getFenList(){
+    $.ajax({
+      type: "GET",
+      url:
+        "/api/fen/list",
+      dataType: "json",
+      async:false,
+      error: function () {
+        console.log("통신실패!!");
+      },
+      success: function (data) {
+        for (let i=0; i < data.length; i++){
+          appendTableRow(i+1, data[i].fen, data[i].win);
+        }
+      },
+    });
+  }
+
+  function appendTableRow(rank, name, score, ) {
+    // Find the table element with the class 'content-table'
+    const table = document.querySelector('.content-table-body');
+
+    // Create a new table row
+    const newRow = document.createElement('tr');
+
+    // Create table data cells and set their content
+    const rankCell = document.createElement('td');
+    rankCell.textContent = rank;
+
+    const nameCell = document.createElement('td');
+    nameCell.textContent = name;
+    nameCell.addEventListener('click', function(){
+      setBoard.position(this.innerText + '8/8/8/8');
+    })
+
+    const scoreCell = document.createElement('td');
+    scoreCell.textContent = score;
+
+
+    // Append the table data cells to the new row
+    newRow.appendChild(rankCell);
+    newRow.appendChild(nameCell);
+    newRow.appendChild(scoreCell);
+    // Append the new row to the table
+    table.appendChild(newRow);
+  }
 
   function startGame(){
       game = pyscript.interpreter.globals.get('get_board')()
-      if (!checkVaildations(game)){
-        return
-      }
       game.set_fen(setBoard.fen())
+      check = checkVaildations(game)
+      if (!check){
+        return false
+      }
+      checkPoint = setBoard.fen()
       gameBoard = new Chessboard('gameBoard', {
         draggable: false,
         sparePieces: false,
         position:game.fen()})
       $('#gameBoard').css('display', 'block')
       $('#myBoard').css('display', 'none')
+      postFen()
       battleStockfish(game,gameBoard)
   }
 
 
-  $( document ).ready(
-     updateScore(piecesScore),  
+  $( document ).ready(function(){
+      updateScore(piecesScore)
+      getFenList()
+    } 
   )
+
+  $('#start').click(function(){
+    startGame()
+  })
   function updateScore(CPScore){
     $('#Cscore').html(copyWP)
   }
@@ -170,15 +226,52 @@
     });
   }
 
+  function postFenWin(color){
+    $.ajax({
+      type: "POST", 
+      url: `/api/fen/rate`,
+      data:JSON.stringify({fen : checkPoint, color:color}),
+      dataType: "json",
+      contentType: "application/json",
+      async:false,
+      error: function () {
+        console.log("통신실패!!");
+      },
+      success: function (data) {
+        console.log(data)
+      },
+    }); 
+  }
+  function postFen(){
+    $.ajax({
+      type: "POST", 
+      url: `/api/fen`,
+      data:JSON.stringify({fen : checkPoint}),
+      dataType: "json",
+      contentType: "application/json",
+      async:false,
+      error: function () {
+        console.log("통신실패!!");
+      },
+      success: function (data) {
+        console.log(data)
+      },
+    }); 
+  }
+
 
   function checkStatus(game,board){
     if (game.is_checkmate() === true && game.turn === false){
-
-    return
+      console.log(checkPoint)
+      postFenWin(true)
+      window.setTimeout(init, 1000)
+      return
     } else if (game.is_game_over() || game.is_repetition(count = 3)){
-    window.setTimeout(init, 1000)
+      console.log(checkPoint)
+      postFenWin(false)
+      window.setTimeout(init, 1000)
     } else {
-    battleStockfish(game,board)
+      battleStockfish(game,board)
     }
   }
   
@@ -192,6 +285,11 @@
     if (target.slice(1,2) > 4 || positionSet.includes(target)) {
       return 'snapback'
     }
+    console.log(Object.values(newPos).find(o => o === 'wK'))
+    if (piece === 'wK' && target[1] > 2 || Object.values(oldPos).find(o => o === 'wK') && Object.values(newPos).filter(o=> o ==='wK').length > 1){
+        return 'snapback'
+      }
+    console.log(newPos)
 
     if (target === 'offboard' && source !== 'spare'){
       positionSet = positionSet.filter((e) => e !== source)
@@ -208,6 +306,7 @@
     
     if (source === 'spare' && target !=='offboard') {
       vaildation = checkScoreVaildation(piece)
+
       if (!vaildation) {
         decreaseScore(piece)
         return 'snapback'
@@ -221,39 +320,6 @@
     updateScore(copyWP)
   }
 
-  function setBlackBoard(status=false, fen){
-    var resultFen = '';
-    if (status){
-      defaultPiecesSet()
-    } 
-    prepareBoard = pyscript.interpreter.globals.get('get_board')()
-    randomFen = pyscript.interpreter.globals.get('create_random_fen')(score = blackScore , count = config.think).toJs();
-    let RF = randomFen.map(function (element) {
-      return element + fen
-    })
-    let stringFen = RF.join(',').replaceAll('/','_')
-    $.ajax({
-      type: "GET",
-      url: `/chessapi/api/automate/eval?fen_list=${stringFen}`,
-      async: false,
-      dataType: "json",
-      error: function () {
-        
-      },
-      success: function (data) {
-        console.log(data)
-        resultFen = data
-      }
-
-    })
-
-    updateScore(copyWP)
-    setBoard.position(resultFen);
-    copyWP = [...whitePieces]
-    prepareBoard.set_fen(resultFen)
-    return prepareBoard
-  }
-
   
 
   function init(){
@@ -262,17 +328,22 @@
     positionSet = [];
     copyWP = 0
     getFen()
+    getFenList()
   }
 
   function checkVaildations(game){
+    if (game.is_check() || game.is_checkmate() || game.is_stalemate() || !game.king(true)){
+      return false  
+    }
+
     game.turn = false
 
     if (game.is_check() || game.is_checkmate() || game.is_stalemate() || !game.king(true)){
       return false
     }
-
+    
     game.turn = true
-
+    
     return game
   }
 
@@ -281,6 +352,7 @@
       return false
       }
     $(".form").css("display", "none");
+    init()
     })
   
 

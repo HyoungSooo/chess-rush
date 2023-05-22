@@ -5,13 +5,14 @@ from django.core.cache import cache
 import random
 from django.db.models import *
 from django.conf import settings
-from .models import ChessPuzzle, AutomateFen
+from .models import ChessPuzzle, AutomateFen, ChessPuzzleTheme
 from django.urls import path,include
 from .utils import write_pgn_chunk_files, get_stockfish, create_random_fen
 from .processor import PuzzleProcess
 from django.views.generic import TemplateView
 from collections import defaultdict
 from django.db import transaction
+from django.core import serializers
 
 api = NinjaAPI()
 
@@ -34,14 +35,17 @@ def parse_puzzle(request,key:ApiKey):
     
 
 @api.get('/puzzle')
-def get_random_puzzle(request):
-    max_id = ChessPuzzle.objects.all().aggregate(max_id=Max("id"))['max_id']
-    while True:
-        pk = random.randint(1, max_id)
-        puzzle = ChessPuzzle.objects.filter(
-            pk=pk).filter(theme__icontains = 'underPromotion').values('fen', 'moves').first()
-        if puzzle:
-            return JsonResponse(puzzle, safe=False)
+def get_random_puzzle(request, score:int):
+    
+    if 0 <= score < 5:
+        theme = 'mateIn1'
+    elif 5 <= score < 10:
+        theme = 'short'
+    elif 10 <= score < 25:
+        theme = 'long'
+    else:
+        theme = 'veryLong'
+    return ChessPuzzleTheme.objects.get(theme = theme).puzzle.all().order_by("?").values('fen', 'moves').first()
 
 ONE_DAY = 60*60*24
 
@@ -71,7 +75,10 @@ def get_client_ip(request, data:UserInterface):
     if rank == None:
         rank = {ip : {'username' : data.username, 'region': data.region, 'score': data.score}}
     else:
-        rank[ip] = {'username' : data.username, 'region': data.region, 'score': data.score}
+        try:
+          rank[ip] = max({'username' : data.username, 'region': data.region, 'score': data.score}, rank[ip], key= lambda x: x['score'])
+        except:
+          rank[ip] = {'username' : data.username, 'region': data.region, 'score': data.score}
     
     cache.set('rank', rank, 60*60*24)
     
@@ -99,7 +106,7 @@ def clear_all_cache(request, key:ApiKey):
     cache.clear()
     cache.set('total',total_played, ONE_DAY*365)
 
-@api.get('total')
+@api.get('/total')
 def get_total_palyed_game(request):
     return cache.get('total')
 
@@ -110,11 +117,11 @@ def stockfish_recommend(request, fen: str):
     return stockfish.get_best_move()
       
 
-@api.get('fen')
+@api.get('/fen')
 def get_random_fen(request):
     max_id = AutomateFen.objects.all().aggregate(max_id=Max("id"))['max_id']
     if max_id == None:
-        fen_list = create_random_fen(100)
+        fen_list = create_random_fen(20)
         create_list = []
         for i in fen_list:
             create_list.append(AutomateFen(fen = i))
@@ -127,6 +134,46 @@ def get_random_fen(request):
             pk=pk).values('fen').first()
         if fen:
             return JsonResponse(fen, safe=False)
+        
+class Fen(Schema):
+    fen:str
+    color:bool = None
+        
+@api.post('/fen')
+def create_fen(request, fen:Fen):
+    data = fen.fen.split('/')
+    data = '/'.join(data[4:])[::-1].lower() + '/'
+    data = AutomateFen.objects.get_or_create(fen=data)
+    if not data[1]:
+        data[0].count += 1
+        data[0].save()
+    
+    return data[0].fen
+        
+
+@api.get('/fen/list')
+def get_fen_list_20_order_by_win_rate(request):
+    data = list(AutomateFen.objects.all().order_by('-win').values('fen','win')[:20])
+    return JsonResponse(data, safe=False)
+
+@api.post('/fen/rate')
+def increase_win_count_of_fen(request,fen:Fen):
+    if fen.color == 'None':
+        return
+    
+    if fen.color:
+        data = fen.fen.split('/')
+        data = '/'.join(data[4:])[::-1].lower() + '/'
+    else:
+        data = '/'.join(fen.fen.split('/')[:4]) + '/'
+
+    with transaction.atomic():
+      fen = AutomateFen.objects.select_for_update().get(fen=data)
+      fen.win += 1
+      fen.save()
+
+      return
+
 
     
 urlpatterns = [
