@@ -36,6 +36,8 @@ RUN adduser \
         --disabled-password \
         django-user
 RUN chmod 777 /usr/src/app
+RUN chown dockuser:dockuser -R /app/
+
+USER django-user
 # run entrypoint.sh
 ENTRYPOINT ["bash", "/usr/local/bin/docker-entrypoint.sh"]
-USER django-user
