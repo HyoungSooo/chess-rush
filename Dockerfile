@@ -36,7 +36,7 @@ RUN adduser \
         --disabled-password \
         django-user
 RUN chmod 777 /usr/src/app
-RUN chown django-user:django-user -R /app/
+RUN chown django-user:django-user -R /usr/src/app
 
 USER django-user
 # run entrypoint.sh
