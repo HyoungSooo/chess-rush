@@ -27,8 +27,10 @@ jobs:
 
             options:
               ports: "8000"
-              dockerfile: chessRush/Dockerfile
-              commands: python manage.py runserver 0.0.0.0:8000
+              dockerfile: Dockerfile.cloud
+              commands: |-
+                python manage.py migrate
+                python manage.py runserver 0.0.0.0:8000
               env:
                 - name: SECRET_KEY
                   value: django-insecure-nekkd7f8#7!-j6!q%4nlr)xp+m!!w%q(92_=jtniq%m*4*2^xc

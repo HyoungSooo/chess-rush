@@ -38,7 +38,13 @@ RUN curl -O https://stockfishchess.org/files/stockfish-10-linux.zip
 RUN unzip stockfish-10-linux.zip
 RUN mv stockfish-10-linux stockfish_10_linux 
 
-
+RUN adduser \
+        --no-create-home \
+        --disabled-password \
+        django-user
+RUN chmod 777 /usr/src/app
+RUN chown django-user:django-user -R /usr/src/app
+USER django-user
 
 # run entrypoint.sh
 ENTRYPOINT ["bash", "/usr/local/bin/docker-entrypoint.sh"]
