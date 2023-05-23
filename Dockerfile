@@ -36,6 +36,7 @@ RUN apt-get install netcat -y
 
 RUN curl -O https://stockfishchess.org/files/stockfish-10-linux.zip
 RUN unzip stockfish-10-linux.zip
+RUN chomd a+x /usr/src/app/stockfish_10_linux/Linux/stockfish_10_x64
 
 
 # run entrypoint.sh

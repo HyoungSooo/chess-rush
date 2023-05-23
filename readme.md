@@ -51,5 +51,6 @@ automte demo page => https://www.chess-rush.kro.kr/api/sample/automate
 
 
 
-### in Version 0.0.3 future works
-* ip access restriction logic to control indiscriminate requests
+### Version 0.0.3 update
+* create WAS using gunicorn, nginx.
+default ports : 5085, you can modified ports
