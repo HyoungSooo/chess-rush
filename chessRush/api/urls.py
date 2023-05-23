@@ -180,5 +180,5 @@ urlpatterns = [
     path('', api.urls),
     path('rush/', TemplateView.as_view(template_name='puzzle_attack.html'), name='puzzle'),
     path('automate', TemplateView.as_view(template_name='automate.html'), name='automate'),
-    path('index/', TemplateView.as_view(template_name='index.html')),
+    path('index/', TemplateView.as_view(template_name='index.html'), name = 'index'),
 ]
