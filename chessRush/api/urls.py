@@ -178,6 +178,7 @@ def increase_win_count_of_fen(request,fen:Fen):
     
 urlpatterns = [
     path('', api.urls),
-    path('sample/', TemplateView.as_view(template_name='puzzle_attack.html'), name='puzzle'),
-    path('sample/automate', TemplateView.as_view(template_name='automate.html'), name='puzzle'),
+    path('rush/', TemplateView.as_view(template_name='puzzle_attack.html'), name='puzzle'),
+    path('automate', TemplateView.as_view(template_name='automate.html'), name='automate'),
+    path('index/', TemplateView.as_view(template_name='index.html')),
 ]

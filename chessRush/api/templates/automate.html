@@ -126,7 +126,12 @@
         console.log("통신실패!!");
       },
       success: function (data) {
-        setBoard.position(data.fen + '8/8/8/8');
+        if (checkPoint){
+          setBoard.position(data.fen + checkPoint.split('/').slice(4,).join('/'))
+        } else {
+          setBoard.position(data.fen + '8/8/8/8');
+        }
+        
       },
     });
   }
@@ -163,7 +168,7 @@
     const nameCell = document.createElement('td');
     nameCell.textContent = name;
     nameCell.addEventListener('click', function(){
-      setBoard.position(this.innerText + '8/8/8/8');
+      setBoard.position(this.innerText + setBoard.fen().split('/').slice(4,).join('/'));
     })
 
     const scoreCell = document.createElement('td');
