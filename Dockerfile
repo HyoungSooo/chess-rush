@@ -36,6 +36,7 @@ RUN apt-get install netcat -y
 
 RUN curl -O https://stockfishchess.org/files/stockfish-10-linux.zip
 RUN unzip stockfish-10-linux.zip
+RUN mv stockfish-10-linux stockfish_10_linux 
 
 # run entrypoint.sh
 ENTRYPOINT ["bash", "/usr/local/bin/docker-entrypoint.sh"]
