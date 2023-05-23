@@ -19,7 +19,7 @@ jobs:
         with:
           token: ${{ secrets.CLOUDTYPE_TOKEN }}
           project: aaa5740323/chessrush
-          stage: master
+          stage: main
           yaml: >
             name: chessrush
 
