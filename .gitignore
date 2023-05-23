@@ -4,6 +4,6 @@
 .pyc
 __pycache__
 staticfiles
-
-*/test
-*/static
+db.sqlite3
+test
+static
