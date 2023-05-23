@@ -44,7 +44,7 @@ RUN adduser \
         django-user
 RUN chmod 777 /usr/src/app
 RUN chown django-user:django-user -R /usr/src/app
-RUN chmod a+x /usr/local/bin/stockfish_10_linux/Linux/stockfish_10_x64
+RUN chmod a+x /usr/src/app/stockfish_10_linux/Linux/stockfish_10_x64
 USER django-user
 
 # run entrypoint.sh
