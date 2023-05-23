@@ -21,3 +21,18 @@ services:
     container_name: redis-service-chess-rush
     ports:
       - "6379:6379"
+
+  nginx:
+    container_name: nginx
+    restart: always
+    image: "nginx:latest"
+    ports:
+      - "5085:5085"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./chessRush/static:/static
+
+    depends_on: 
+      - web
+
+ 

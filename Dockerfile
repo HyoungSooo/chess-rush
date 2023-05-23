@@ -31,13 +31,5 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Entrypoint dependencies
 RUN apt-get install netcat -y
 
-RUN adduser \
-        --no-create-home \
-        --disabled-password \
-        django-user
-RUN chmod 777 /usr/src/app
-RUN chown django-user:django-user -R /usr/src/app
-
-USER django-user
 # run entrypoint.sh
 ENTRYPOINT ["bash", "/usr/local/bin/docker-entrypoint.sh"]

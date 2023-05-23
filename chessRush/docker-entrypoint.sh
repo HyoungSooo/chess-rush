@@ -16,5 +16,8 @@
 echo "Appling database migrations..."
 python manage.py makemigrations 
 python manage.py migrate
+gunicorn --config gunicorn-cfg.py chessRush.wsgi --reload 
 
 exec "$@"
+
+
