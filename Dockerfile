@@ -28,13 +28,14 @@ RUN dos2unix --newfile docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 # Make entrypoint executable
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+RUN apt-get install curl -y
+RUN apt-get install unzip -y
+
 # Entrypoint dependencies
 RUN apt-get install netcat -y
 
 RUN curl -O https://stockfishchess.org/files/stockfish-10-linux.zip
 RUN unzip stockfish-10-linux.zip
-COPY /usr/src/app/stockfish-10-linux /usr/src/app/api
-RUN chmod +x /usr/src/app/api/stockfish-10-linux
 
 
 # run entrypoint.sh

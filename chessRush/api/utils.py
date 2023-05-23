@@ -9,7 +9,7 @@ def write_pgn_chunk_files(value, name):
 
 
 def get_stockfish():
-    os.chdir(f"{settings.BASE_DIR}/api/stockfish_10_linux/Linux")
+    os.chdir(f"{settings.BASE_DIR}/stockfish_10_linux/Linux")
     file_dir = os.getcwd()
 
     stockfish = Stockfish(
